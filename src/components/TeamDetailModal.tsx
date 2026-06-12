@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { Team, Player } from '../types';
 import { PlayerCard } from './PlayerCard';
-import { X, Star, Zap, Shield, Users } from 'lucide-react';
+import { X, Star, Zap, Shield, Users, AlertCircle, Move } from 'lucide-react';
 
 interface TeamDetailModalProps {
   team: Team;
@@ -9,14 +10,43 @@ interface TeamDetailModalProps {
 }
 
 export const TeamDetailModal = ({ team, onClose, onUpdatePlayers }: TeamDetailModalProps) => {
+  const [error, setError] = useState('');
+  const [draggedPlayer, setDraggedPlayer] = useState<Player | null>(null);
+
   const starters = team.players.filter(p => p.isStarter);
   const substitutes = team.players.filter(p => !p.isStarter);
 
-  const handleToggleStarter = (playerId: string) => {
-    const updatedPlayers = team.players.map(p =>
-      p.id === playerId ? { ...p, isStarter: !p.isStarter } : p
-    );
+  const handleDragStart = (e: React.DragEvent, player: Player) => {
+    setDraggedPlayer(player);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, targetPlayer: Player) => {
+    e.preventDefault();
+    
+    if (!draggedPlayer || !targetPlayer.isStarter) {
+      setDraggedPlayer(null);
+      return;
+    }
+
+    const updatedPlayers = team.players.map(p => {
+      if (p.id === draggedPlayer.id) {
+        return { ...p, isStarter: true };
+      }
+      if (p.id === targetPlayer.id) {
+        return { ...p, isStarter: false };
+      }
+      return p;
+    });
+
     onUpdatePlayers(updatedPlayers);
+    setDraggedPlayer(null);
+    setError('');
   };
 
   return (
@@ -67,6 +97,13 @@ export const TeamDetailModal = ({ team, onClose, onUpdatePlayers }: TeamDetailMo
           </div>
         </div>
         
+        {error && (
+          <div className="bg-red-50 border border-red-200 px-4 py-3 flex items-center space-x-2">
+            <AlertCircle className="h-5 w-5 text-red-500" />
+            <span className="text-red-700 text-sm">{error}</span>
+          </div>
+        )}
+        
         <div className="p-6 overflow-y-auto max-h-[60vh]">
           <div className="mb-6">
             <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">
@@ -78,7 +115,9 @@ export const TeamDetailModal = ({ team, onClose, onUpdatePlayers }: TeamDetailMo
                 <PlayerCard
                   key={player.id}
                   player={player}
-                  onToggleStarter={() => handleToggleStarter(player.id)}
+                  onDragStart={(e) => handleDragStart(e, player)}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, player)}
                 />
               ))}
             </div>
@@ -88,13 +127,19 @@ export const TeamDetailModal = ({ team, onClose, onUpdatePlayers }: TeamDetailMo
             <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">
               <span className="w-2 h-2 bg-gray-400 rounded-full mr-2"></span>
               替补球员 ({substitutes.length})
+              <span className="ml-2 flex items-center text-sm font-normal text-gray-500">
+                <Move className="h-4 w-4 mr-1" />
+                拖动替换首发
+              </span>
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {substitutes.map(player => (
                 <PlayerCard
                   key={player.id}
                   player={player}
-                  onToggleStarter={() => handleToggleStarter(player.id)}
+                  onDragStart={(e) => handleDragStart(e, player)}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, player)}
                 />
               ))}
             </div>

@@ -3,10 +3,12 @@ import { User, Star } from 'lucide-react';
 
 interface PlayerCardProps {
   player: Player;
-  onToggleStarter: () => void;
+  onDragStart: (e: React.DragEvent) => void;
+  onDragOver: (e: React.DragEvent) => void;
+  onDrop: (e: React.DragEvent) => void;
 }
 
-export const PlayerCard = ({ player, onToggleStarter }: PlayerCardProps) => {
+export const PlayerCard = ({ player, onDragStart, onDragOver, onDrop }: PlayerCardProps) => {
   const positionLabels: Record<string, string> = {
     GK: '门将',
     DF: '后卫',
@@ -23,32 +25,39 @@ export const PlayerCard = ({ player, onToggleStarter }: PlayerCardProps) => {
 
   return (
     <div
-      className={`bg-white rounded-lg shadow-md p-3 transition-all duration-200 ${
-        player.isStarter ? 'ring-2 ring-green-500' : 'opacity-70 hover:opacity-100'
+      draggable={!player.isStarter}
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      className={`bg-white rounded-lg shadow-md p-3 transition-all duration-200 cursor-move ${
+        player.isStarter 
+          ? 'ring-2 ring-green-500 border-2 border-green-500' 
+          : 'opacity-70 hover:opacity-100 ring-2 ring-gray-300 border-2 border-gray-300 hover:border-gray-400'
       }`}
     >
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center space-x-2">
-          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-            <User className="h-5 w-5 text-green-600" />
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+            player.isStarter ? 'bg-green-100' : 'bg-gray-100'
+          }`}>
+            <User className={`h-5 w-5 ${player.isStarter ? 'text-green-600' : 'text-gray-500'}`} />
           </div>
           <div>
-            <div className="font-medium text-gray-800">{player.name}</div>
+            <div className={`font-medium ${player.isStarter ? 'text-green-700' : 'text-gray-600'}`}>
+              {player.name}
+            </div>
             <div className={`text-xs px-2 py-0.5 rounded-full inline-block ${positionColors[player.position]}`}>
               {positionLabels[player.position]}
             </div>
           </div>
         </div>
-        <button
-          onClick={onToggleStarter}
-          className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-            player.isStarter
-              ? 'bg-green-600 text-white hover:bg-green-700'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
+        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+          player.isStarter
+            ? 'bg-green-600 text-white'
+            : 'bg-gray-200 text-gray-600'
+        }`}>
           {player.isStarter ? '首发' : '替补'}
-        </button>
+        </span>
       </div>
       
       <div className="grid grid-cols-3 gap-2 text-center">
